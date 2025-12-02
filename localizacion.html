@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Obteniendo ubicación…</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    padding: 30px;
+    text-align: center;
+}
+</style>
+</head>
+<body>
+
+<h2>Obteniendo ubicación…</h2>
+<p>Por favor permite el acceso a tu ubicación.</p>
+
+<script>
+// ----------------------------------------------
+// 1. Obtener parámetros del QR
+// ----------------------------------------------
+const params = new URLSearchParams(window.location.search);
+const codigo = params.get("camion");   // CAM-001-AOB, etc.
+const zona = params.get("zona");       // NORTE, CENTRO, etc.
+
+// ----------------------------------------------
+// 2. Formularios por zona
+// ----------------------------------------------
+const formularios = {
+    "NORTE": {
+        url: "https://docs.google.com/forms/d/e/1FAIpQLSesarIBna3JQlq2cgT1PIRcCSYdY1fzSBQF7PAAhsHNMvGhbQ/viewform",
+        geo_field: "entry.621604071"
+    },
+    "CENTRO": {
+        url: "https://docs.google.com/forms/d/e/1FAIpQLSd3FP-QU3yCxKvmTlItYHv3--Y12wY4agZEcyqjQGBKa4EiCw/viewform",
+        geo_field: "entry.1879544146"
+    },
+    "ORIENTE": {
+        url: "https://docs.google.com/forms/d/e/1FAIpQLSePoRV-GKuFi9aIJKZq708jw9R-s7LkAtA-geHmh4EI8GA-hQ/viewform",
+        geo_field: "entry.1444984070"
+    },
+    "SURPONIENTE": {
+        url: "https://docs.google.com/forms/d/e/1FAIpQLSfrWrWPNlsB8C-N85PEspWuGm9lv_ivKsNH5IiDU6GiEPn3Hg/viewform",
+        geo_field: "entry.959114351"
+    }
+};
+
+// ----------------------------------------------
+// 3. Obtener la ubicación real (GPS)
+// ----------------------------------------------
+navigator.geolocation.getCurrentPosition(
+    function (pos) {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+
+        const z = formularios[zona];
+
+        // Construimos URL del Form ya prellenado
+        const query = new URLSearchParams({
+            "usp": "pp_url",
+            "entry.948776940": codigo,
+            [z.geo_field]: `${lat},${lon}`
+        });
+
+        // Redirigir al formulario
+        window.location.href = `${z.url}?${query.toString()}`;
+    },
+    function (err) {
+        alert("No se pudo obtener la ubicación. Por favor activa GPS.");
+    },
+    { enableHighAccuracy: true }
+);
+</script>
+
+</body>
+</html>
