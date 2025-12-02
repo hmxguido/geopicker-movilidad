@@ -1,126 +1,77 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Geolocalización – Movilidad</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>Obteniendo ubicación…</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 30px;
-            text-align: center;
-            background: #f5f5f5;
-        }
-        #msg {
-            font-size: 22px;
-            font-weight: bold;
-            color: #333;
-            margin-top: 40px;
-        }
-    </style>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    padding: 30px;
+    text-align: center;
+}
+</style>
 </head>
 <body>
 
 <h2>Obteniendo ubicación…</h2>
-<div id="msg">Por favor espera.</div>
+<p>Por favor permite el acceso a tu ubicación.</p>
 
 <script>
-/* --------------------------------------------------------------
-   1. Obtener parámetros desde el URL: ?camion=XXX&zona=XXX
--------------------------------------------------------------- */
+// ----------------------------------------------
+// 1. Obtener parámetros del QR
+// ----------------------------------------------
 const params = new URLSearchParams(window.location.search);
-const camionID = params.get("camion");
-const zona = params.get("zona");
+const codigo = params.get("camion");   // CAM-001-AOB, etc.
+const zona = params.get("zona");       // NORTE, CENTRO, etc.
 
-if (!camionID || !zona) {
-    document.getElementById("msg").innerText =
-        "Error: el QR no contiene datos válidos.";
-    throw new Error("Faltan parámetros en el URL.");
-}
-
-/* --------------------------------------------------------------
-   2. Formularios por zona con sus entry IDs correctos
--------------------------------------------------------------- */
-
-const FORM_URLS = {
-    "Norte": {
+// ----------------------------------------------
+// 2. Formularios por zona
+// ----------------------------------------------
+const formularios = {
+    "NORTE": {
         url: "https://docs.google.com/forms/d/e/1FAIpQLSesarIBna3JQlq2cgT1PIRcCSYdY1fzSBQF7PAAhsHNMvGhbQ/viewform",
-        entryCamion: "entry.948776940",
-        entryGeo: "entry.621604071"
+        geo_field: "entry.621604071"
     },
-    "Centro": {
+    "CENTRO": {
         url: "https://docs.google.com/forms/d/e/1FAIpQLSd3FP-QU3yCxKvmTlItYHv3--Y12wY4agZEcyqjQGBKa4EiCw/viewform",
-        entryCamion: "entry.948776940",
-        entryGeo: "entry.1879544146"
+        geo_field: "entry.1879544146"
     },
-    "Oriente": {
+    "ORIENTE": {
         url: "https://docs.google.com/forms/d/e/1FAIpQLSePoRV-GKuFi9aIJKZq708jw9R-s7LkAtA-geHmh4EI8GA-hQ/viewform",
-        entryCamion: "entry.948776940",
-        entryGeo: "entry.1444984070"
+        geo_field: "entry.1444984070"
     },
-    "SurPoniente": {
+    "SURPONIENTE": {
         url: "https://docs.google.com/forms/d/e/1FAIpQLSfrWrWPNlsB8C-N85PEspWuGm9lv_ivKsNH5IiDU6GiEPn3Hg/viewform",
-        entryCamion: "entry.948776940",
-        entryGeo: "entry.959114351"
+        geo_field: "entry.959114351"
     }
 };
 
-const zonaData = FORM_URLS[zona];
-
-if (!zonaData) {
-    document.getElementById("msg").innerText =
-        "Error: la zona indicada no existe: " + zona;
-    throw new Error("Zona inválida.");
-}
-
-/* --------------------------------------------------------------
-   3. Pedir geolocalización del dispositivo
--------------------------------------------------------------- */
-
-if (!navigator.geolocation) {
-    document.getElementById("msg").innerText =
-        "Este dispositivo no permite obtener ubicación.";
-    throw new Error("No geolocation support");
-}
-
-document.getElementById("msg").innerText = "Solicitando permiso de ubicación…";
-
+// ----------------------------------------------
+// 3. Obtener la ubicación real (GPS)
+// ----------------------------------------------
 navigator.geolocation.getCurrentPosition(
-    function success(pos) {
-        const lat = pos.coords.latitude.toFixed(6);
-        const lon = pos.coords.longitude.toFixed(6);
+    function (pos) {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
 
-        document.getElementById("msg").innerText =
-            "Ubicación obtenida. Redirigiendo…";
+        const z = formularios[zona];
 
-        /* --------------------------------------------------------------
-           4. Construir URL del Google Forms con prellenado
-        -------------------------------------------------------------- */
+        // Construimos URL del Form ya prellenado
+        const query = new URLSearchParams({
+            "usp": "pp_url",
+            "entry.948776940": codigo,
+            [z.geo_field]: `${lat},${lon}`
+        });
 
-        const finalURL =
-            zonaData.url +
-            "?usp=pp_url" +
-            `&${zonaData.entryCamion}=${encodeURIComponent(camionID)}` +
-            `&${zonaData.entryGeo}=${lat},${lon}`;
-
-        /* --------------------------------------------------------------
-           5. Redirigir automáticamente al formulario
-        -------------------------------------------------------------- */
-        window.location.href = finalURL;
+        // Redirigir al formulario
+        window.location.href = `${z.url}?${query.toString()}`;
     },
-
-    function error(err) {
-        document.getElementById("msg").innerText =
-            "No fue posible obtener la ubicación. Error: " + err.message;
-        console.error(err);
+    function (err) {
+        alert("No se pudo obtener la ubicación. Por favor activa GPS.");
     },
-
-    {
-        enableHighAccuracy: true,
-        timeout: 8000,
-        maximumAge: 0
-    }
+    { enableHighAccuracy: true }
 );
 </script>
 
