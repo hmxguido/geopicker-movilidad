@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Obteniendo ubicación…</title>
+<title>Registro de transporte</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -13,66 +13,56 @@ body {
 }
 </style>
 </head>
+
 <body>
 
 <h2>Obteniendo ubicación…</h2>
-<p>Por favor permite el acceso a tu ubicación.</p>
+<p>Por favor permite el acceso a tu ubicación para continuar con el registro.</p>
 
 <script>
-// ----------------------------------------------
-// 1. Obtener parámetros del QR
-// ----------------------------------------------
 const params = new URLSearchParams(window.location.search);
-const codigo = params.get("camion");   // CAM-001-AOB, etc.
-const zona = params.get("zona");       // NORTE, CENTRO, etc.
+const codigo = params.get("camion");
 
-// ----------------------------------------------
-// 2. Formularios por zona
-// ----------------------------------------------
-const formularios = {
-    "NORTE": {
-        url: "https://docs.google.com/forms/d/e/1FAIpQLSesarIBna3JQlq2cgT1PIRcCSYdY1fzSBQF7PAAhsHNMvGhbQ/viewform",
-        geo_field: "entry.621604071"
-    },
-    "CENTRO": {
-        url: "https://docs.google.com/forms/d/e/1FAIpQLSd3FP-QU3yCxKvmTlItYHv3--Y12wY4agZEcyqjQGBKa4EiCw/viewform",
-        geo_field: "entry.1879544146"
-    },
-    "ORIENTE": {
-        url: "https://docs.google.com/forms/d/e/1FAIpQLSePoRV-GKuFi9aIJKZq708jw9R-s7LkAtA-geHmh4EI8GA-hQ/viewform",
-        geo_field: "entry.1444984070"
-    },
-    "SURPONIENTE": {
-        url: "https://docs.google.com/forms/d/e/1FAIpQLSfrWrWPNlsB8C-N85PEspWuGm9lv_ivKsNH5IiDU6GiEPn3Hg/viewform",
-        geo_field: "entry.959114351"
-    }
-};
+const formURL = "https://docs.google.com/forms/d/e/1FAIpQLSdLkXHPMtOxG20LfXdWPzOIea9bHudZtsyWv1_8MYwZWjygpg/viewform";
 
-// ----------------------------------------------
-// 3. Obtener la ubicación real (GPS)
-// ----------------------------------------------
-navigator.geolocation.getCurrentPosition(
-    function (pos) {
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
+if (!codigo) {
+    document.body.innerHTML = `
+        <h2>Error</h2>
+        <p>No se encontró el código del transporte en el QR.</p>
+    `;
+} else if (!navigator.geolocation) {
+    document.body.innerHTML = `
+        <h2>Error</h2>
+        <p>Este dispositivo no permite obtener ubicación GPS.</p>
+    `;
+} else {
+    navigator.geolocation.getCurrentPosition(
+        function(pos) {
+            const lat = pos.coords.latitude;
+            const lon = pos.coords.longitude;
 
-        const z = formularios[zona];
+            const query = new URLSearchParams({
+                "usp": "pp_url",
+                "entry.786665857": codigo,
+                "entry.2008102927": `${lat},${lon}`
+            });
 
-        // Construimos URL del Form ya prellenado
-        const query = new URLSearchParams({
-            "usp": "pp_url",
-            "entry.948776940": codigo,
-            [z.geo_field]: `${lat},${lon}`
-        });
-
-        // Redirigir al formulario
-        window.location.href = `${z.url}?${query.toString()}`;
-    },
-    function (err) {
-        alert("No se pudo obtener la ubicación. Por favor activa GPS.");
-    },
-    { enableHighAccuracy: true }
-);
+            window.location.href = `${formURL}?${query.toString()}`;
+        },
+        function(err) {
+            document.body.innerHTML = `
+                <h2>No se pudo obtener la ubicación</h2>
+                <p>Activa el GPS y permite el acceso a la ubicación.</p>
+                <p>Después vuelve a escanear el QR.</p>
+            `;
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
+        }
+    );
+}
 </script>
 
 </body>
